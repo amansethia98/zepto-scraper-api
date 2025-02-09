@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: zepto-scraper
+    env: python
+    plan: free
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: python zepto_scraper.py
