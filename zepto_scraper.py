@@ -7,6 +7,7 @@ app = Flask(__name__)
 BASE_URL = "https://api.zepto.com/api/v2/store-products-by-store-subcategory-id"
 STORE_ID = "fa5e892d-65d7-4da6-9bde-e1f22deb7b6f"
 
+# ✅ Headers to mimic a real browser request
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
     "Accept": "application/json"
@@ -31,22 +32,35 @@ def scrape():
             products = data.get("storeProducts", [])
 
             if not products:
-                break  # Stop when no more products are found
+                break  # 🚨 Stop when no more products are found
 
             for item in products:
-                product_name = item["product"]["name"]
-                price = item["discountedSellingPrice"] / 100
-                mrp = item["mrp"] / 100
+                product = item.get("product", {})
+                variant = item.get("productVariant", {})
+                rating_summary = variant.get("ratingSummary", {})
+                images = variant.get("images", [])
 
-                all_products.append({
-                    "name": product_name,
-                    "price": price,
-                    "mrp": mrp
-                })
+                # ✅ Extract additional product details
+                product_details = {
+                    "name": product.get("name", "N/A"),
+                    "brand": product.get("brand", "N/A"),
+                    "primary_category": item.get("primaryCategoryName", "N/A"),
+                    "primary_subcategory": item.get("primarySubcategoryName", "N/A"),
+                    "mrp": variant.get("mrp", 0) / 100,  # Convert from paisa
+                    "discounted_price": item.get("discountedSellingPrice", 0) / 100,
+                    "discount_percentage": item.get("discountPercent", 0),
+                    "discount_amount": item.get("discountAmount", 0) / 100,
+                    "super_saver_price": item.get("superSaverSellingPrice", 0) / 100,
+                    "average_rating": rating_summary.get("averageRating", 0),
+                    "total_ratings": rating_summary.get("totalRatings", 0),
+                    "main_image_path": images[0]["path"] if images else "N/A",
+                }
+
+                all_products.append(product_details)
 
             page_number += 1
         else:
-            break  # Stop if API fails
+            break  # 🚨 Stop if API fails
 
     return jsonify(all_products)
 
